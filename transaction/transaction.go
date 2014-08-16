@@ -17,11 +17,6 @@ type Transaction struct {
 	total  AmountType
 }
 
-type Account struct {
-	splits []Split
-	total  AmountType
-}
-
 func NewTransaction() *Transaction {
 	return &Transaction{}
 }
