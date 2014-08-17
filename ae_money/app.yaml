@@ -1,0 +1,20 @@
+application: gmoney
+version: 1
+runtime: go
+api_version: go1
+
+handlers:
+- url: /
+  static_files: static/app.html
+  upload: static/app.html
+  login: admin
+
+- url: /stylesheets
+  static_dir: static/stylesheets
+
+- url: /javascript
+  static_dir: static/javascript
+
+- url: /.*
+  script: _go_app
+  login: admin

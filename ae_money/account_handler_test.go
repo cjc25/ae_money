@@ -16,21 +16,27 @@ import (
 	"appengine/user"
 )
 
-func insertOrDie(t *testing.T, c appengine.Context, a []transaction.Account, k []*datastore.Key) {
-	if len(k) != len(a) {
-		t.Fatalf("%v keys for %v accounts", len(k), len(a))
+func insertOrDie(t *testing.T, c appengine.Context, a []DatastoreAccount) {
+	putKeys := make([]*datastore.Key, len(a))
+	putAccounts := make([]*transaction.Account, len(a))
+	for i, value := range a {
+		putKeys[i] = value.DatastoreKey
+		putAccounts[i] = value.Account
 	}
-	keys, err := datastore.PutMulti(c, k, a)
+
+	keys, err := datastore.PutMulti(c, putKeys, putAccounts)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	// Update the DatastoreAccount keys, in case any were incomplete.
 	for i := 0; i < len(keys); i++ {
 		a[i].DatastoreKey = keys[i]
 	}
 }
 
-func decodeListResponse(t *testing.T, w *httptest.ResponseRecorder) []transaction.Account {
-	var got []transaction.Account
+func decodeListResponse(t *testing.T, w *httptest.ResponseRecorder) []DatastoreAccount {
+	var got []DatastoreAccount
 	d := json.NewDecoder(w.Body)
 	err := d.Decode(&got)
 	if err != nil {
@@ -55,14 +61,15 @@ func TestListAccounts_OneUser(t *testing.T) {
 
 	userKey := datastore.NewKey(c, "User", u.String(), 0, nil)
 
-	a := []transaction.Account{{Name: "a1"}, {Name: "a2"}}
-	k := []*datastore.Key{datastore.NewIncompleteKey(c, "Account", userKey),
-		datastore.NewIncompleteKey(c, "Account", userKey)}
-	insertOrDie(t, c, a, k)
+	a := []DatastoreAccount{
+		{&transaction.Account{Name: "a1"}, datastore.NewIncompleteKey(c, "Account", userKey)},
+		{&transaction.Account{Name: "a2"}, datastore.NewIncompleteKey(c, "Account", userKey)},
+	}
+	insertOrDie(t, c, a)
 
 	ListAccounts(w, r, c, u)
-	got := decodeListResponse(t, w)
 
+	got := decodeListResponse(t, w)
 	if !reflect.DeepEqual(a, got) {
 		t.Errorf("Expected %v, got %v", a, got)
 	}
@@ -76,10 +83,11 @@ func TestListAccounts_MultipleUsers(t *testing.T) {
 	firstUserKey := userKey(c, u)
 	otherUserKey := userKey(c, &user.User{Email: "other@example.com"})
 
-	a := []transaction.Account{{Name: "a1"}, {Name: "a2"}}
-	k := []*datastore.Key{datastore.NewIncompleteKey(c, "Account", firstUserKey),
-		datastore.NewIncompleteKey(c, "Account", otherUserKey)}
-	insertOrDie(t, c, a, k)
+	a := []DatastoreAccount{
+		{&transaction.Account{Name: "a1"}, datastore.NewIncompleteKey(c, "Account", firstUserKey)},
+		{&transaction.Account{Name: "a2"}, datastore.NewIncompleteKey(c, "Account", otherUserKey)},
+	}
+	insertOrDie(t, c, a)
 
 	ListAccounts(w, r, c, u)
 	got := decodeListResponse(t, w)
@@ -112,16 +120,16 @@ func TestAddAccount_Success(t *testing.T) {
 	}
 
 	// Check that the keys are the same by checking the strings are the same
-	result := make(map[string]interface{})
+	result := DatastoreAccount{}
 	d := json.NewDecoder(w.Body)
 	err = d.Decode(&result)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if k[0].Encode() != result["key"] {
+	if k[0].Encode() != result.DatastoreKey.Encode() {
 		t.Errorf("Expected returned key '%v' to match queried key '%v'",
-			result["key"], k[0].Encode())
+			result.DatastoreKey.Encode(), k[0].Encode())
 	}
 }
 

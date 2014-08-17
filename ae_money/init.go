@@ -36,7 +36,7 @@ func userKey(c appengine.Context, u *user.User) *datastore.Key {
 func init() {
 	r := mux.NewRouter()
 
-	api := r.PathPrefix("/api/{version:v[0-9]+}").Subrouter()
+	api := r.PathPrefix("/api/v{version:[0-9]+}").Subrouter()
 	api.HandleFunc("/accounts", contextWrapper(loginWrapper(ListAccounts))).
 		Methods("GET")
 	api.HandleFunc("/accounts/new", contextWrapper(loginWrapper(NewAccount))).

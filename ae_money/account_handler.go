@@ -11,6 +11,11 @@ import (
 	"appengine/user"
 )
 
+type DatastoreAccount struct {
+	Account      *transaction.Account `json:"account"`
+	DatastoreKey *datastore.Key       `json:"key"`
+}
+
 func ListAccounts(w http.ResponseWriter, r *http.Request, c appengine.Context, u *user.User) {
 	q := datastore.NewQuery("Account").Ancestor(userKey(c, u)).Order("Name")
 	// We make an empty slice so we can return [] if there are no accounts.
@@ -21,12 +26,14 @@ func ListAccounts(w http.ResponseWriter, r *http.Request, c appengine.Context, u
 		return
 	}
 
+	result := make([]DatastoreAccount, len(accounts))
 	for i := 0; i < len(keys); i++ {
-		accounts[i].DatastoreKey = keys[i]
+		result[i].Account = &accounts[i]
+		result[i].DatastoreKey = keys[i]
 	}
 
 	e := json.NewEncoder(w)
-	err = e.Encode(accounts)
+	err = e.Encode(result)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -34,6 +41,8 @@ func ListAccounts(w http.ResponseWriter, r *http.Request, c appengine.Context, u
 }
 
 func NewAccount(w http.ResponseWriter, r *http.Request, c appengine.Context, u *user.User) {
+	// We specifically want to decode into a transaction.Account so we don't pick
+	// up a key.
 	var a transaction.Account
 	d := json.NewDecoder(r.Body)
 	if err := d.Decode(&a); err != nil {
@@ -53,9 +62,9 @@ func NewAccount(w http.ResponseWriter, r *http.Request, c appengine.Context, u *
 		return
 	}
 
-	a.DatastoreKey = k
+	persisted := DatastoreAccount{&a, k}
 	e := json.NewEncoder(w)
-	if err = e.Encode(&a); err != nil {
+	if err = e.Encode(&persisted); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

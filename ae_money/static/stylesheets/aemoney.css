@@ -1,0 +1,12 @@
+.hidden {
+  visibility: hidden;
+}
+
+.account_link {
+	text-decoration: underline;
+	color: blue;
+}
+
+.account_link:hover {
+	cursor: pointer;
+}
