@@ -3,22 +3,37 @@ package transaction
 import (
 	"errors"
 	"fmt"
+
+	"code.google.com/p/go-uuid/uuid"
 )
 
 type AmountType int
 
+// TransactionID is a string because datastore can't handle arbitrary byte
+// strings.
+type TransactionID string
+
 type Split struct {
-	Amount  AmountType
-	Account *Account
+	Amount        AmountType
+	account       *Account
+	transactionID TransactionID
+}
+
+func NewSplit(amount AmountType, account *Account) *Split {
+	return &Split{amount, account, ""}
+}
+
+func (s *Split) Account() *Account {
+	return s.account
+}
+
+func (s *Split) TransactionID() TransactionID {
+	return s.transactionID
 }
 
 type Transaction struct {
 	splits []Split
 	total  AmountType
-}
-
-func NewTransaction() *Transaction {
-	return &Transaction{}
 }
 
 func (x *Transaction) AddSplits(splits []*Split) {
@@ -43,13 +58,13 @@ func (x *Transaction) Valid() error {
 
 	seen := make(map[*Account]bool)
 	for _, split := range x.splits {
-		if split.Account == nil {
+		if split.account == nil {
 			return errors.New("Split with nil Account.")
 		}
-		if seen[split.Account] {
+		if seen[split.account] {
 			return errors.New("Multiple Splits for same Account.")
 		}
-		seen[split.Account] = true
+		seen[split.account] = true
 	}
 
 	return nil
@@ -60,9 +75,12 @@ func (x *Transaction) Commit() error {
 		return err
 	}
 
+	xid := TransactionID(uuid.NewRandom().String())
+
 	for _, split := range x.splits {
-		split.Account.splits = append(split.Account.splits, split)
-		split.Account.total += split.Amount
+		split.transactionID = xid
+		split.account.splits = append(split.account.splits, split)
+		split.account.total += split.Amount
 	}
 
 	x.clear()
