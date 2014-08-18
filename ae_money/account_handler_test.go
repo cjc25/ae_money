@@ -90,7 +90,7 @@ func TestListAccounts_MultipleUsers(t *testing.T) {
 	expectListAccountsResponse(t, w, k, a)
 }
 
-func TestAddAccount_Success(t *testing.T) {
+func TestNewAccount_Success(t *testing.T) {
 	u := &user.User{Email: "test@example.com"}
 	w, r, c := initTestRequestParams(t, u)
 	defer c.Close()
@@ -126,7 +126,7 @@ func TestAddAccount_Success(t *testing.T) {
 	}
 }
 
-func expectBadAddAccountResponse(t *testing.T, c appengine.Context, u *user.User, w *httptest.ResponseRecorder) {
+func expectBadNewAccountResponse(t *testing.T, c appengine.Context, u *user.User, w *httptest.ResponseRecorder) {
 	q := datastore.NewQuery("Account").Ancestor(userKey(c, u)).KeysOnly()
 	keys, err := q.GetAll(c, make([]transaction.Account, 0))
 	if err != nil {
@@ -140,7 +140,7 @@ func expectBadAddAccountResponse(t *testing.T, c appengine.Context, u *user.User
 	}
 }
 
-func TestAddAccount_FailureNoBody(t *testing.T) {
+func TestNewAccount_FailureNoBody(t *testing.T) {
 	u := &user.User{Email: "test@example.com"}
 	w, r, c := initTestRequestParams(t, u)
 	defer c.Close()
@@ -148,10 +148,10 @@ func TestAddAccount_FailureNoBody(t *testing.T) {
 	r.Body = ioutil.NopCloser(bytes.NewBufferString(""))
 	NewAccount(&requestParams{w: w, r: r, c: c, u: u})
 
-	expectBadAddAccountResponse(t, c, u, w)
+	expectBadNewAccountResponse(t, c, u, w)
 }
 
-func TestAddAccount_FailureNoAccountName(t *testing.T) {
+func TestNewAccount_FailureNoAccountName(t *testing.T) {
 	u := &user.User{Email: "test@example.com"}
 	w, r, c := initTestRequestParams(t, u)
 	defer c.Close()
@@ -159,5 +159,5 @@ func TestAddAccount_FailureNoAccountName(t *testing.T) {
 	r.Body = ioutil.NopCloser(bytes.NewBufferString(`{"name":"  "}`))
 	NewAccount(&requestParams{w: w, r: r, c: c, u: u})
 
-	expectBadAddAccountResponse(t, c, u, w)
+	expectBadNewAccountResponse(t, c, u, w)
 }
