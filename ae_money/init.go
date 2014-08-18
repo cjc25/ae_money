@@ -11,21 +11,33 @@ import (
 	"appengine/user"
 )
 
-func contextWrapper(f func(http.ResponseWriter, *http.Request, appengine.Context)) func(http.ResponseWriter, *http.Request) {
+type requestParams struct {
+	w http.ResponseWriter
+	r *http.Request
+	c appengine.Context
+	u *user.User
+	v map[string]string
+}
+
+func baseWrapper(f func(*requestParams)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		c := appengine.NewContext(r)
-		f(w, r, c)
+		p := requestParams{w: w, r: r}
+		p.c = appengine.NewContext(r)
+		p.v = mux.Vars(r)
+
+		f(&p)
 	}
 }
 
-func loginWrapper(f func(http.ResponseWriter, *http.Request, appengine.Context, *user.User)) func(http.ResponseWriter, *http.Request, appengine.Context) {
-	return func(w http.ResponseWriter, r *http.Request, c appengine.Context) {
-		u := user.Current(c)
-		if u == nil {
-			w.WriteHeader(http.StatusUnauthorized)
+func loginWrapper(f func(*requestParams)) func(*requestParams) {
+	return func(p *requestParams) {
+		p.u = user.Current(p.c)
+		if p.u == nil {
+			p.w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		f(w, r, c, u)
+
+		f(p)
 	}
 }
 
@@ -37,9 +49,9 @@ func init() {
 	r := mux.NewRouter()
 
 	api := r.PathPrefix("/api/v{version:[0-9]+}").Subrouter()
-	api.HandleFunc("/accounts", contextWrapper(loginWrapper(ListAccounts))).
+	api.HandleFunc("/accounts", baseWrapper(loginWrapper(ListAccounts))).
 		Methods("GET")
-	api.HandleFunc("/accounts/new", contextWrapper(loginWrapper(NewAccount))).
+	api.HandleFunc("/accounts/new", baseWrapper(loginWrapper(NewAccount))).
 		Methods("POST")
 
 	r.HandleFunc("/", root)

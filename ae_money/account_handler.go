@@ -6,9 +6,7 @@ import (
 
 	"github.com/cjc25/ae_money/transaction"
 
-	"appengine"
 	"appengine/datastore"
-	"appengine/user"
 )
 
 type DatastoreAccount struct {
@@ -16,7 +14,10 @@ type DatastoreAccount struct {
 	DatastoreKey *datastore.Key       `json:"key"`
 }
 
-func ListAccounts(w http.ResponseWriter, r *http.Request, c appengine.Context, u *user.User) {
+func ListAccounts(p *requestParams) {
+	// Unwrap requestParams for easy access.
+	w, c, u := p.w, p.c, p.u
+
 	q := datastore.NewQuery("Account").Ancestor(userKey(c, u)).Order("Name")
 	// We make an empty slice so we can return [] if there are no accounts.
 	accounts := make([]transaction.Account, 0)
@@ -40,7 +41,10 @@ func ListAccounts(w http.ResponseWriter, r *http.Request, c appengine.Context, u
 	}
 }
 
-func NewAccount(w http.ResponseWriter, r *http.Request, c appengine.Context, u *user.User) {
+func NewAccount(p *requestParams) {
+	// Unwrap requestParams for easy access.
+	w, r, c, u := p.w, p.r, p.c, p.u
+
 	// We specifically want to decode into a transaction.Account so we don't pick
 	// up a key.
 	var a transaction.Account

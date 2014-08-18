@@ -50,7 +50,7 @@ func TestListAccounts_Empty(t *testing.T) {
 	w, r, c := initTestRequestParams(t, u)
 	defer c.Close()
 
-	ListAccounts(w, r, c, u)
+	ListAccounts(&requestParams{w: w, r: r, c: c, u: u})
 	expectBody(t, "[]", w)
 }
 
@@ -67,7 +67,7 @@ func TestListAccounts_OneUser(t *testing.T) {
 	}
 	insertOrDie(t, c, a)
 
-	ListAccounts(w, r, c, u)
+	ListAccounts(&requestParams{w: w, r: r, c: c, u: u})
 
 	got := decodeListResponse(t, w)
 	if !reflect.DeepEqual(a, got) {
@@ -89,7 +89,7 @@ func TestListAccounts_MultipleUsers(t *testing.T) {
 	}
 	insertOrDie(t, c, a)
 
-	ListAccounts(w, r, c, u)
+	ListAccounts(&requestParams{w: w, r: r, c: c, u: u})
 	got := decodeListResponse(t, w)
 
 	if !reflect.DeepEqual(a[:1], got) {
@@ -104,7 +104,7 @@ func TestAddAccount_Success(t *testing.T) {
 
 	r.Body = ioutil.NopCloser(bytes.NewBufferString(`{"name":"a1"}`))
 
-	NewAccount(w, r, c, u)
+	NewAccount(&requestParams{w: w, r: r, c: c, u: u})
 
 	q := datastore.NewQuery("Account").Ancestor(userKey(c, u))
 	var accounts []transaction.Account
@@ -153,7 +153,7 @@ func TestAddAccount_FailureNoBody(t *testing.T) {
 	defer c.Close()
 
 	r.Body = ioutil.NopCloser(bytes.NewBufferString(""))
-	NewAccount(w, r, c, u)
+	NewAccount(&requestParams{w: w, r: r, c: c, u: u})
 
 	expectBadAddAccountResponse(t, c, u, w)
 }
@@ -164,7 +164,7 @@ func TestAddAccount_FailureNoAccountName(t *testing.T) {
 	defer c.Close()
 
 	r.Body = ioutil.NopCloser(bytes.NewBufferString(`{"name":"  "}`))
-	NewAccount(w, r, c, u)
+	NewAccount(&requestParams{w: w, r: r, c: c, u: u})
 
 	expectBadAddAccountResponse(t, c, u, w)
 }
