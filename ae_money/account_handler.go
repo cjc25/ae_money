@@ -10,8 +10,8 @@ import (
 )
 
 type DatastoreAccount struct {
-	Account      *transaction.Account `json:"account"`
-	DatastoreKey *datastore.Key       `json:"key"`
+	Account *transaction.Account `json:"account"`
+	IntID   int64                `json:"key"`
 }
 
 func ListAccounts(p *requestParams) {
@@ -30,7 +30,7 @@ func ListAccounts(p *requestParams) {
 	result := make([]DatastoreAccount, len(accounts))
 	for i := 0; i < len(keys); i++ {
 		result[i].Account = &accounts[i]
-		result[i].DatastoreKey = keys[i]
+		result[i].IntID = keys[i].IntID()
 	}
 
 	e := json.NewEncoder(w)
@@ -66,7 +66,7 @@ func NewAccount(p *requestParams) {
 		return
 	}
 
-	persisted := DatastoreAccount{&a, k}
+	persisted := DatastoreAccount{&a, k.IntID()}
 	e := json.NewEncoder(w)
 	if err = e.Encode(&persisted); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
