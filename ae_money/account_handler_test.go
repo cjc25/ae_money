@@ -3,10 +3,13 @@ package ae_money
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"code.google.com/p/go-uuid/uuid"
 
 	"github.com/cjc25/ae_money/transaction"
 
@@ -15,7 +18,7 @@ import (
 	"appengine/user"
 )
 
-func insertOrDie(t *testing.T, c appengine.Context, a []transaction.Account, u *user.User) []*datastore.Key {
+func insertAccountsOrDie(t *testing.T, c appengine.Context, a []transaction.Account, u *user.User) []*datastore.Key {
 	accountKeys := make([]*datastore.Key, len(a))
 	for i := range a {
 		accountKeys[i] = datastore.NewIncompleteKey(c, "Account", userKey(c, u))
@@ -69,7 +72,7 @@ func TestListAccounts_OneUser(t *testing.T) {
 	defer c.Close()
 
 	a := []transaction.Account{{Name: "a1"}, {Name: "a2"}}
-	k := insertOrDie(t, c, a, u)
+	k := insertAccountsOrDie(t, c, a, u)
 
 	ListAccounts(&requestParams{w: w, r: r, c: c, u: u})
 
@@ -82,12 +85,85 @@ func TestListAccounts_MultipleUsers(t *testing.T) {
 	defer c.Close()
 
 	a := []transaction.Account{{Name: "a1"}}
-	k := insertOrDie(t, c, a, u)
-	insertOrDie(t, c, []transaction.Account{{Name: "a1"}}, &user.User{Email: "other@example.com"})
+	k := insertAccountsOrDie(t, c, a, u)
+	insertAccountsOrDie(t, c, []transaction.Account{{Name: "a1"}}, &user.User{Email: "other@example.com"})
 
 	ListAccounts(&requestParams{w: w, r: r, c: c, u: u})
 
 	expectListAccountsResponse(t, w, k, a)
+}
+
+func insertSplitsOrDie(t *testing.T, c appengine.Context, s []*transaction.Split, accountKey *datastore.Key) {
+	splitKeys := make([]*datastore.Key, len(s))
+	for i := range s {
+		splitKeys[i] = datastore.NewKey(c, "Split", uuid.NewRandom().String(), 0, accountKey)
+	}
+	_, err := datastore.PutMulti(c, splitKeys, s)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestShowAccount_Success(t *testing.T) {
+	u := &user.User{Email: "test@example.com"}
+	w, _, c := initTestRequestParams(t, u)
+	defer c.Close()
+
+	a := []transaction.Account{{Name: "a1"}}
+	k := insertAccountsOrDie(t, c, a, u)
+	insertSplitsOrDie(t, c, []*transaction.Split{transaction.NewSplit(123, nil)}, k[0])
+	v := map[string]string{"key": fmt.Sprint(k[0].IntID())}
+
+	ShowAccount(&requestParams{w: w, c: c, u: u, v: v})
+
+	expectCode(t, http.StatusOK, w)
+
+	result := DatastoreAccountAndSplits{}
+	d := json.NewDecoder(w.Body)
+	if err := d.Decode(&result); err != nil {
+		t.Fatal(err)
+	}
+
+	if result.IntID != k[0].IntID() {
+		t.Errorf("Expected result id to be %v, got %v", k[0].IntID(), result.IntID)
+	}
+	if result.Account.Name != a[0].Name {
+		t.Errorf("Expected result name to be %v, got %v", a[0].Name, result.Account.Name)
+	}
+	if len(result.Splits) != 1 {
+		t.Fatalf("Expected 1 split in result. Got %v", len(result.Splits))
+	}
+	if result.Splits[0].Amount != 123 {
+		t.Errorf("Expected split amount 123, got %v", result.Splits[0].Amount)
+	}
+}
+
+func TestShowAccount_FailureNoSuchAccount(t *testing.T) {
+	u := &user.User{Email: "test@example.com"}
+	w, _, c := initTestRequestParams(t, u)
+	defer c.Close()
+
+	v := map[string]string{"key": "123456"}
+
+	ShowAccount(&requestParams{w: w, c: c, u: u, v: v})
+
+	expectCode(t, http.StatusNotFound, w)
+	expectBody(t, "", w)
+}
+
+func TestShowAccount_FailureOtherUsersAccount(t *testing.T) {
+	u := &user.User{Email: "test@example.com"}
+	w, _, c := initTestRequestParams(t, u)
+	defer c.Close()
+
+	k := insertAccountsOrDie(t, c, []transaction.Account{{Name: "a1"}}, &user.User{Email: "other@example.com"})
+	insertSplitsOrDie(t, c, []*transaction.Split{transaction.NewSplit(123, nil)}, k[0])
+	v := map[string]string{"key": fmt.Sprint(k[0].IntID())}
+
+	ShowAccount(&requestParams{w: w, c: c, u: u, v: v})
+
+	expectCode(t, http.StatusNotFound, w)
+	expectBody(t, "", w)
 }
 
 func TestNewAccount_Success(t *testing.T) {

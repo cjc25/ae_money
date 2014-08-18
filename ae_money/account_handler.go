@@ -2,6 +2,7 @@ package ae_money
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/cjc25/ae_money/transaction"
@@ -12,6 +13,11 @@ import (
 type DatastoreAccount struct {
 	Account *transaction.Account `json:"account"`
 	IntID   int64                `json:"key"`
+}
+
+type DatastoreAccountAndSplits struct {
+	DatastoreAccount
+	Splits []transaction.Split `json:"splits"`
 }
 
 func ListAccounts(p *requestParams) {
@@ -33,6 +39,45 @@ func ListAccounts(p *requestParams) {
 		result[i].IntID = keys[i].IntID()
 	}
 
+	e := json.NewEncoder(w)
+	err = e.Encode(result)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func ShowAccount(p *requestParams) {
+	w, c, u, v := p.w, p.c, p.u, p.v
+
+	var accountIntID int64
+	_, err := fmt.Sscan(v["key"], &accountIntID)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	// We get the account, then query splits separately: Accounts can't be
+	// updated yet, but even if they could they're just names. Consistency is
+	// unimportant.
+	accountKey := datastore.NewKey(c, "Account", "", accountIntID, userKey(c, u))
+	var a transaction.Account
+	err = datastore.Get(c, accountKey, &a)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	q := datastore.NewQuery("Split").Ancestor(accountKey)
+	// We make an empty slice so we can return [] if there are no splits.
+	splits := make([]transaction.Split, 0)
+	_, err = q.GetAll(c, &splits)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	result := &DatastoreAccountAndSplits{DatastoreAccount{&a, accountKey.IntID()}, splits}
 	e := json.NewEncoder(w)
 	err = e.Encode(result)
 	if err != nil {
