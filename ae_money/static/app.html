@@ -19,12 +19,18 @@
 
   <div id="accounts" class="page">
     <h1>Accounts</h1>
-    <div id="account_creation">
+    <div id="account_creation"><form>
       <input type="text" id="new_account_name" />
-      <input type="submit" id="new_account_submit">Create an account</a>
-    </div>
+      <input type="submit" id="new_account_submit" value="Create an account" />
+    </form></div>
     <div id="accounts_list">Loading...</div>
+  </div>
+
+  <div id="account_detail" class="page">
+    <h1 id="account_detail_name">Account</h1>
+    <a id="account_detail_to_accounts" href="#">Back...</a>
+    <div id="account_detail_splits">Loading...</div>
   </div>
 </div>
 </body>
-<html>
+</html>
