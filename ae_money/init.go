@@ -44,6 +44,7 @@ func init() {
 	r := mux.NewRouter()
 
 	api := r.PathPrefix("/api/v{version:[0-9]+}").Subrouter()
+
 	api.HandleFunc("/accounts/new", baseWrapper(loginWrapper(NewAccount))).
 		Methods("POST")
 	api.HandleFunc("/accounts", baseWrapper(loginWrapper(ShowAccount))).
@@ -51,6 +52,9 @@ func init() {
 		Methods("GET")
 	api.HandleFunc("/accounts", baseWrapper(loginWrapper(ListAccounts))).
 		Methods("GET")
+
+	api.HandleFunc("/transactions/new", baseWrapper(loginWrapper(NewTransaction))).
+		Methods("POST")
 
 	http.Handle("/", r)
 }
