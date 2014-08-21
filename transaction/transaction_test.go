@@ -7,98 +7,105 @@ import (
 
 func TestValidTransaction(t *testing.T) {
 	x := &Transaction{}
+	x.AddSplits([]*Split{&Split{Amount: 4}, &Split{Amount: 2}, &Split{Amount: -6}})
 
-	x.AddSplits([]*Split{
-		NewSplit(4, &Account{}), NewSplit(2, &Account{}), NewSplit(-6, &Account{}),
-	})
-
-	if err := x.Valid(); err != nil {
-		t.Errorf("Expected valid transaction, was not: %v", err)
+	if err := x.ValidateAmount(); err != nil {
+		t.Errorf("Expected transaction %v to have valid amount but it did not: %v",
+			x, err)
+	}
+	if err := x.ValidateAccounts(); err == nil {
+		t.Errorf("Got valid accounts for transaction %v", x)
 	}
 }
 
 func TestInvalidTransaction_Empty(t *testing.T) {
 	x := &Transaction{}
-	if err := x.Valid(); err == nil {
-		t.Error("Empty transaction was valid")
+	if err := x.ValidateAmount(); err == nil {
+		t.Errorf("Empty transaction %v had valid amount", x)
+	}
+	if err := x.ValidateAccounts(); err == nil {
+		t.Errorf("Empty transaction %v had valid accounts", x)
 	}
 }
 
 func TestInvalidTransaction_NonZero(t *testing.T) {
 	x := &Transaction{}
-	x.AddSplits([]*Split{NewSplit(4, &Account{}), NewSplit(-3, &Account{})})
-	if err := x.Valid(); err == nil {
-		t.Errorf("Expected invalid transaction, was: %v", x)
+	_, k1 := NewAccount("a1", 0)
+	_, k2 := NewAccount("a2", 0)
+	x.AddSplits([]*Split{&Split{Amount: 4, account: k1}, &Split{Amount: -3, account: k2}})
+
+	if err := x.ValidateAmount(); err == nil {
+		t.Errorf("Nonzero transaction %v had valid amount", x)
+	}
+	if err := x.ValidateAccounts(); err != nil {
+		t.Errorf("Transaction %v had invalid accounts: %v", x, err)
 	}
 }
 
-func TestInvalidTransaction_NilAccount(t *testing.T) {
+func TestInvalidTransaction_AccountNotPresent(t *testing.T) {
 	x := &Transaction{}
-	x.AddSplits([]*Split{NewSplit(4, nil), NewSplit(-4, &Account{})})
-	if err := x.Valid(); err == nil {
-		t.Errorf("Expected invalid transaction, was: %v", x)
+	_, k1 := NewAccount("a1", 0)
+	x.AddSplits([]*Split{&Split{Amount: 4, account: k1}, &Split{Amount: -4, account: k1 + 1}})
+
+	if err := x.ValidateAmount(); err != nil {
+		t.Errorf("Transaction %v had invalid amount: %v", x, err)
+	}
+	if err := x.ValidateAccounts(); err == nil {
+		t.Errorf("Transaction %v had valid accounts", x)
 	}
 }
 
 func TestInvalidTransaction_DuplicateAccount(t *testing.T) {
 	x := &Transaction{}
-	acct := Account{}
-	x.AddSplits([]*Split{NewSplit(4, &acct), NewSplit(-4, &acct)})
-	if err := x.Valid(); err == nil {
-		t.Errorf("Expected invalid transaction, was: %v", x)
+	_, k1 := NewAccount("a1", 0)
+	x.AddSplits([]*Split{&Split{Amount: 4, account: k1}, &Split{Amount: -4, account: k1}})
+
+	if err := x.ValidateAmount(); err != nil {
+		t.Errorf("Transaction %v had invalid amount: %v", x, err)
+	}
+	if err := x.ValidateAccounts(); err == nil {
+		t.Errorf("Transaction %v had valid accounts", x)
 	}
 }
 
-func TestCommit_TransactionID(t *testing.T) {
-	a1, a2 := Account{}, Account{}
+func TestCommit(t *testing.T) {
 	x := &Transaction{}
-	x.AddSplits([]*Split{NewSplit(-100, &a1), NewSplit(100, &a2)})
+	a1, k1 := NewAccount("a1", 0)
+	a2, k2 := NewAccount("a2", 0)
+	x.AddSplits([]*Split{&Split{Amount: -100, account: k1}, &Split{Amount: 100, account: k2}})
+
 	if err := x.Commit(); err != nil {
-		t.Fatalf("Expected initial commit to be valid: %v", x)
+		t.Fatalf("Expected transaction %v to commit, but got: %v", x, err)
 	}
 
-	if a1.splits[0].transactionID != a2.splits[0].transactionID {
-		t.Errorf("Expected equal transaction IDs. Instead, a1: '%v', a2: '%v",
-			a1.splits[0].transactionID, a2.splits[0].transactionID)
+	if a1.total != -100 {
+		t.Errorf("Expected a1 total to be -100, but got %v", a1.total)
 	}
-}
-
-func TestDoubleCommit(t *testing.T) {
-	a1, a2 := Account{}, Account{}
-	x := &Transaction{}
-	x.AddSplits([]*Split{NewSplit(-100, &a1), NewSplit(100, &a2)})
-	if err := x.Commit(); err != nil {
-		t.Fatalf("Expected initial commit to be valid: %v", x)
-	}
-
-	if err := x.Commit(); err == nil {
-		t.Errorf("Expected second commit to be invalid: error: %v, x: %v", err, x)
-	}
-	if len(a1.splits) != 1 || len(a2.splits) != 1 {
-		t.Errorf("Expected accounts to have a single split: a1: %v, a2: %v", a1, a2)
+	if a2.total != 100 {
+		t.Errorf("Expected a2 total to be 100, but got %v", a2.total)
 	}
 }
 
 func ExampleTransaction() {
-	salary, checking, savings := Account{}, Account{}, Account{}
+	salary, salaryKey := NewAccount("Salary", 0)
+	checking, checkingKey := NewAccount("Checking", 0)
+	savings, savingsKey := NewAccount("Savings", 0)
 	fmt.Printf("Initial amounts: salary: %v, checking: %v, savings: %v\n",
 		salary.total, checking.total, savings.total)
 
 	x := &Transaction{}
 	x.AddSplits([]*Split{
-		NewSplit(-1000, &salary),
-		NewSplit(800, &checking),
+		&Split{Amount: -1000, account: salaryKey},
+		&Split{Amount: 800, account: checkingKey},
 	})
 	fmt.Printf("Transaction error: %v\n", x.Commit())
 
-	x.AddSplit(NewSplit(200, &savings))
+	x.AddSplit(&Split{Amount: 200, account: savingsKey})
 	fmt.Println("New split added")
 	fmt.Printf("x.Commit() successful?: %v\n", x.Commit() == nil)
 
 	fmt.Printf("Final amounts: salary: %v, checking: %v, savings: %v\n",
 		salary.total, checking.total, savings.total)
-	fmt.Printf("Splits per account: salary: %v, checking: %v, savings: %v\n",
-		len(salary.splits), len(checking.splits), len(savings.splits))
 
 	// Output:
 	// Initial amounts: salary: 0, checking: 0, savings: 0
@@ -106,5 +113,4 @@ func ExampleTransaction() {
 	// New split added
 	// x.Commit() successful?: true
 	// Final amounts: salary: -1000, checking: 800, savings: 200
-	// Splits per account: salary: 1, checking: 1, savings: 1
 }

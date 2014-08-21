@@ -111,7 +111,7 @@ func TestShowAccount_Success(t *testing.T) {
 
 	a := []transaction.Account{{Name: "a1"}}
 	k := insertAccountsOrDie(t, c, a, u)
-	insertSplitsOrDie(t, c, []*transaction.Split{transaction.NewSplit(123, nil)}, k[0])
+	insertSplitsOrDie(t, c, []*transaction.Split{&transaction.Split{Amount: 123}}, k[0])
 	v := map[string]string{"key": fmt.Sprint(k[0].IntID())}
 
 	ShowAccount(&requestParams{w: w, c: c, u: u, v: v})
@@ -157,7 +157,7 @@ func TestShowAccount_FailureOtherUsersAccount(t *testing.T) {
 	defer c.Close()
 
 	k := insertAccountsOrDie(t, c, []transaction.Account{{Name: "a1"}}, &user.User{Email: "other@example.com"})
-	insertSplitsOrDie(t, c, []*transaction.Split{transaction.NewSplit(123, nil)}, k[0])
+	insertSplitsOrDie(t, c, []*transaction.Split{&transaction.Split{Amount: 123}}, k[0])
 	v := map[string]string{"key": fmt.Sprint(k[0].IntID())}
 
 	ShowAccount(&requestParams{w: w, c: c, u: u, v: v})
