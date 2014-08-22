@@ -34,7 +34,7 @@ func ListAccounts(p *requestParams) {
 	}
 
 	result := make([]DatastoreAccount, len(accounts))
-	for i := 0; i < len(keys); i++ {
+	for i := range keys {
 		result[i].Account = &accounts[i]
 		result[i].IntID = keys[i].IntID()
 	}
