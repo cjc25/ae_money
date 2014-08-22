@@ -6,9 +6,6 @@ import (
 	"fmt"
 )
 
-var accountMap = make(map[int64]*Account)
-var nextId int64 = 1
-
 // The type used for a Split's value.
 type AmountType int64
 
@@ -16,7 +13,7 @@ type AmountType int64
 // as part of a transaction.
 type Split struct {
 	Amount  AmountType
-	account int64
+	Account int64
 }
 
 // A Transaction is a series of splits that conform to double-entry accounting
@@ -31,6 +28,31 @@ type Split struct {
 type Transaction struct {
 	splits []*Split
 	total  AmountType
+
+	accountMap map[int64]*Account
+	nextId     int64
+}
+
+// Create a new Transaction, which tracks accounts and splits.
+func NewTransaction() *Transaction {
+	return &Transaction{accountMap: make(map[int64]*Account), nextId: 1}
+}
+
+func (x *Transaction) AddAccount(a *Account, id int64) int64 {
+	if id == 0 {
+		// If we didn't ask for an id, set a brand new one.
+		for {
+			_, ok := x.accountMap[x.nextId]
+			if !ok {
+				id = x.nextId
+				break
+			}
+			x.nextId++
+		}
+	}
+
+	x.accountMap[id] = a
+	return id
 }
 
 // Convenience function to add multiple splits to a transaction.
@@ -80,13 +102,13 @@ func (x *Transaction) ValidateAccounts() error {
 
 	seen := make(map[int64]bool)
 	for _, split := range x.splits {
-		if _, ok := accountMap[split.account]; !ok {
-			return fmt.Errorf("Nonexistant account %v", split.account)
+		if _, ok := x.accountMap[split.Account]; !ok {
+			return fmt.Errorf("Nonexistant account %v", split.Account)
 		}
-		if seen[split.account] {
+		if seen[split.Account] {
 			return errors.New("Multiple Splits for same Account.")
 		}
-		seen[split.account] = true
+		seen[split.Account] = true
 	}
 
 	return nil
@@ -102,7 +124,7 @@ func (x *Transaction) Commit() error {
 	}
 
 	for _, split := range x.splits {
-		accountMap[split.account].total += split.Amount
+		x.accountMap[split.Account].total += split.Amount
 	}
 
 	return nil
