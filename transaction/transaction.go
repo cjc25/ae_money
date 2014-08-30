@@ -1,4 +1,4 @@
-// Package transaction implements basic double-entry accounting.
+// Package transaction implements basic double-entry transactions.
 package transaction
 
 import (
@@ -20,7 +20,7 @@ type Split struct {
 // rules, in order to transfer value between accounts.
 //
 // Under double-entry accounting, each credit must have a corresponding debit
-// in a different account, likewise, a Transaction can't be committed unless
+// in a different account. Likewise, a transaction can't be committed unless
 // all of its splits add to 0 and are for different accounts.
 //
 // This means that some accounts will be abstract, for example "Salary," which
@@ -38,9 +38,13 @@ func NewTransaction() *Transaction {
 	return &Transaction{accountMap: make(map[int64]*Account), nextId: 1}
 }
 
+// Add an account to a transaction.
+//
+// If id is zero, a unique non-zero id will be created for it. The returned id
+// should be set in the Account field of splits assigned to this account.
 func (x *Transaction) AddAccount(a *Account, id int64) int64 {
 	if id == 0 {
-		// If we didn't ask for an id, set a brand new one.
+		// If we didn't provide an id, set a brand new one.
 		for {
 			_, ok := x.accountMap[x.nextId]
 			if !ok {
