@@ -8,29 +8,25 @@
 
 </head>
 <body>
-<div id="current">
-  <div id="_startup" class="page"></div>
+<div id="_startup" class="page current"></div>
+<div id="root" class="page hidden">
+  <h1>Welcome to Finance</h1>
+  <a id="root_to_accounts" href="#">My accounts</a>
 </div>
-<div id="hidden_pages" class="hidden">
-  <div id="root" class="page">
-    <h1>Welcome to Finance</h1>
-    <a id="root_to_accounts" href="#">My accounts</a>
-  </div>
 
-  <div id="accounts" class="page">
-    <h1>Accounts</h1>
-    <div id="account_creation"><form>
-      <input type="text" id="new_account_name" />
-      <input type="submit" id="new_account_submit" value="Create an account" />
-    </form></div>
-    <div id="accounts_list">Loading...</div>
-  </div>
+<div id="accounts" class="page hidden">
+  <h1>Accounts</h1>
+  <div id="account_creation"><form>
+    <input type="text" id="new_account_name" />
+    <input type="submit" id="new_account_submit" value="Create an account" />
+  </form></div>
+  <div id="accounts_list">Loading...</div>
+</div>
 
-  <div id="account_detail" class="page">
-    <h1 id="account_detail_name">Account</h1>
-    <a id="account_detail_to_accounts" href="#">Back...</a>
-    <div id="account_detail_splits">Loading...</div>
-  </div>
+<div id="account_detail" class="page hidden">
+  <h1 id="account_detail_name">Account</h1>
+  <a id="account_detail_to_accounts" href="#">Back...</a>
+  <div id="account_detail_splits">Loading...</div>
 </div>
 </body>
 </html>

@@ -1,5 +1,5 @@
-.hidden {
-  visibility: hidden;
+.page.hidden {
+  display: none;
 }
 
 .account_link {

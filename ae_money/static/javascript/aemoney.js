@@ -4,8 +4,8 @@ function apiUrl(endpoint) {
 
 function toPageFunction(newPage) {
   return function(clickEvent) {
-    $("#current > .page").appendTo($("#hidden_pages"));
-    $("#" + newPage).appendTo($("#current"));
+    $(".page.current").addClass("hidden").removeClass("current");
+    $("#" + newPage).addClass("current").removeClass("hidden");
 
     // preventDefault if an event was passed in.
     if (typeof clickEvent != "undefined") {
