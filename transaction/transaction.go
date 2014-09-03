@@ -12,8 +12,8 @@ type AmountType int64
 // A Split is the addition or subtraction of an amount from a single account,
 // as part of a transaction.
 type Split struct {
-	Amount  AmountType
-	Account int64
+	Amount  AmountType `json:"amount"`
+	Account int64      `json:"account"`
 }
 
 // A Transaction is a series of splits that conform to double-entry accounting

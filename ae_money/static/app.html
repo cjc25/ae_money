@@ -20,6 +20,9 @@
     <input type="text" id="new_account_name" />
     <input type="submit" id="new_account_submit" value="Create an account" />
   </div>
+  <div>
+    <a id="accounts_to_new_transaction" href="#">New Transaction</a>
+  </div>
   <div id="accounts_list">Loading...</div>
 </div>
 
@@ -27,6 +30,19 @@
   <h1 id="account_detail_name">Account</h1>
   <a id="account_detail_to_accounts" href="#">Back...</a>
   <div id="account_detail_splits">Loading...</div>
+</div>
+
+<div id="new_transaction" class="page hidden">
+  <h1>New Transaction</h1>
+  <div id="new_transaction_splits">
+  </div>
+  <div>
+    <input type="submit" id="new_transaction_add_split" value="+" />
+  </div>
+  <div>
+    <input type="submit" id="new_transaction_submit" />
+    <input type="submit" id="new_transaction_cancel" value="Cancel" />
+  </div>
 </div>
 </body>
 </html>

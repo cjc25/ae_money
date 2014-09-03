@@ -81,6 +81,14 @@ function setupRootLinks() {
 }
 
 function setupAccountsLinks() {
+  $("#accounts_to_new_transaction").click(function() {
+    // Add 2 transaction splits up front.
+    addNewTransactionSplit();
+    addNewTransactionSplit();
+
+    toPageFunction("new_transaction")();
+  });
+
   // Buttons
   $("#new_account_submit").click(function() {
     submit_button = $(this);
@@ -112,15 +120,91 @@ function setupAccountDetailLinks() {
   });
 }
 
+function buildAccountSelector() {
+  selector = $("<select/>");
+  $("#accounts_list li").each(function() {
+    selector.append($("<option/>")
+      .text($(this).text())
+      .data("key", $(this).data("key"))
+    );
+  })
+  return selector
+}
+
+function addNewTransactionSplit() {
+  $("#new_transaction_splits").append(
+    $("<div/>").append(
+      $("<input/>").prop({
+        type: "submit",
+        class: "new_transaction_remove_split",
+        value: "-",
+      })
+    ).append(
+      $("<input/>").prop({
+        type: "number",
+        class: "new_transaction_amount",
+        placeholder: "Amount",
+      })
+    ).append(
+      buildAccountSelector()
+    )
+  );
+}
+
+function newTransactionToAccounts() {
+  toPageFunction("accounts")();
+  // Remove the split selectors, in case accounts change.
+  $("#new_transaction_splits").children().remove();
+}
+
+function submitNewTransaction() {
+  submit_button = $(this);
+  submit_button.prop("disabled", true);
+
+  request = {amounts: [], accounts: []}
+  $("#new_transaction_splits .new_transaction_amount").each(function() {
+    request.amounts.push(parseInt($(this).val(), 10));
+  });
+  $("#new_transaction_splits option:selected").each(function() {
+    request.accounts.push($(this).data("key"));
+  });
+
+  $.ajax(apiUrl("/transactions/new"), {
+    type: "POST",
+    data: JSON.stringify(request),
+    contentType: "application/json",
+    dataType: "json",
+
+    success: newTransactionToAccounts,
+    complete: function() {
+      submit_button.prop("disabled", false);
+    },
+  });
+}
+
+function setupNewTransactionLinks() {
+  $("#new_transaction_splits").on("click", ".new_transaction_remove_split",
+    function() {
+      $(this).parent().remove()
+    }
+  );
+  $("#new_transaction_add_split").click(addNewTransactionSplit);
+  $("#new_transaction_submit").click(submitNewTransaction);
+  $("#new_transaction_cancel").click(newTransactionToAccounts);
+}
+
 $(document).ready(function() {
   // Prepare links.
   setupRootLinks();
   setupAccountsLinks();
-  setupAccountDetailLinks();
 
   // Close enough! Display the front page.
   toPageFunction("root")();
 
   // Get the accounts list on page load, since the user will probably go there.
   updateAccountsList();
+
+  // Links for pages that a user won't get to until later.
+  setupAccountDetailLinks();
+  setupNewTransactionLinks();
 });
