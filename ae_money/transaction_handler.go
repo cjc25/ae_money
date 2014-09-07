@@ -15,6 +15,7 @@ import (
 type TransactionRequest struct {
 	Amounts  []transaction.AmountType `json:"amounts"`
 	Accounts []int64                  `json:"accounts"`
+	Memo     string                   `json:"memo"`
 }
 
 func NewTransaction(p *requestParams) {
@@ -41,7 +42,7 @@ func NewTransaction(p *requestParams) {
 	for i := range request.Accounts {
 		accountKeys[i] = datastore.NewKey(c, "Account", "", request.Accounts[i], userKey)
 		splitKeys[i] = datastore.NewKey(c, "Split", transactionId, 0, accountKeys[i])
-		splits[i] = &transaction.Split{request.Amounts[i], request.Accounts[i]}
+		splits[i] = &transaction.Split{request.Amounts[i], request.Accounts[i], request.Memo}
 	}
 
 	x := transaction.NewTransaction()

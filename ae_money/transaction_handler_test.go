@@ -15,8 +15,8 @@ import (
 	"appengine/user"
 )
 
-func buildTestTransactionRequest(t *testing.T, amounts []transaction.AmountType, accounts []int64) io.ReadCloser {
-	request := &TransactionRequest{Amounts: amounts, Accounts: accounts}
+func buildTestTransactionRequest(t *testing.T, amounts []transaction.AmountType, accounts []int64, memo string) io.ReadCloser {
+	request := &TransactionRequest{Amounts: amounts, Accounts: accounts, Memo: memo}
 	b := bytes.Buffer{}
 	e := json.NewEncoder(&b)
 	if err := e.Encode(request); err != nil {
@@ -25,7 +25,7 @@ func buildTestTransactionRequest(t *testing.T, amounts []transaction.AmountType,
 	return ioutil.NopCloser(&b)
 }
 
-func expectSplits(t *testing.T, c appengine.Context, u *user.User, accountKeys []*datastore.Key, expected []transaction.AmountType) {
+func expectSplits(t *testing.T, c appengine.Context, u *user.User, accountKeys []*datastore.Key, expected []transaction.AmountType, memo string) {
 	if len(accountKeys) != len(expected) {
 		t.Fatalf("Can't check splits: %v expected account keys != %v expected splits.",
 			len(accountKeys), len(expected))
@@ -47,16 +47,18 @@ func expectSplits(t *testing.T, c appengine.Context, u *user.User, accountKeys [
 			t.Errorf("Expected split %v to have amount %v but got %v",
 				i, expected[i], got[i].Amount)
 		}
+		if got[i].Memo != memo {
+			t.Errorf("Expected split %v to have memo %v but got %v",
+				i, memo, got[i].Memo)
+		}
+
 		if xKeys[i].Parent().Encode() != accountKeys[i].Encode() {
 			t.Errorf("Expected split %v to have account %v but got %v",
 				i, accountKeys[i].Encode(), xKeys[i].Parent().Encode())
 		}
-	}
-
-	for i, k := range xKeys {
-		if k.StringID() != xKeys[0].StringID() {
+		if xKeys[i].StringID() != xKeys[0].StringID() {
 			t.Errorf("Expected all splits to have the same ID, but split 0 had %v and split %v had %v",
-				xKeys[0].StringID(), i, k.StringID())
+				xKeys[0].StringID(), i, xKeys[i].StringID())
 		}
 	}
 }
@@ -71,13 +73,14 @@ func TestTransactionSuccess(t *testing.T) {
 	r.Body = buildTestTransactionRequest(t,
 		[]transaction.AmountType{-123, 123},
 		[]int64{accountKeys[0].IntID(), accountKeys[1].IntID()},
+		"Test transaction",
 	)
 
 	NewTransaction(&requestParams{w: w, r: r, c: c, u: u})
 
 	expectCode(t, http.StatusOK, w)
 	expectBody(t, "", w)
-	expectSplits(t, c, u, accountKeys, []transaction.AmountType{-123, 123})
+	expectSplits(t, c, u, accountKeys, []transaction.AmountType{-123, 123}, "Test transaction")
 }
 
 func TestTransactionDifferentLengths(t *testing.T) {
@@ -90,12 +93,13 @@ func TestTransactionDifferentLengths(t *testing.T) {
 	r.Body = buildTestTransactionRequest(t,
 		[]transaction.AmountType{123, -100, -23},
 		[]int64{accountKeys[0].IntID(), accountKeys[1].IntID()},
+		"Bad transaction",
 	)
 
 	NewTransaction(&requestParams{w: w, r: r, c: c, u: u})
 
 	expectCode(t, http.StatusBadRequest, w)
-	expectSplits(t, c, u, nil, nil)
+	expectSplits(t, c, u, nil, nil, "")
 }
 
 func TestTransactionNoSplits(t *testing.T) {
@@ -108,7 +112,7 @@ func TestTransactionNoSplits(t *testing.T) {
 	NewTransaction(&requestParams{w: w, r: r, c: c, u: u})
 
 	expectCode(t, http.StatusBadRequest, w)
-	expectSplits(t, c, u, nil, nil)
+	expectSplits(t, c, u, nil, nil, "")
 }
 
 func TestTransactionNonZero(t *testing.T) {
@@ -121,12 +125,13 @@ func TestTransactionNonZero(t *testing.T) {
 	r.Body = buildTestTransactionRequest(t,
 		[]transaction.AmountType{123, 456},
 		[]int64{accountKeys[0].IntID(), accountKeys[1].IntID()},
+		"Bad transaction",
 	)
 
 	NewTransaction(&requestParams{w: w, r: r, c: c, u: u})
 
 	expectCode(t, http.StatusBadRequest, w)
-	expectSplits(t, c, u, nil, nil)
+	expectSplits(t, c, u, nil, nil, "")
 }
 
 func TestTransactionDuplicateAccount(t *testing.T) {
@@ -139,12 +144,13 @@ func TestTransactionDuplicateAccount(t *testing.T) {
 	r.Body = buildTestTransactionRequest(t,
 		[]transaction.AmountType{-123, 123},
 		[]int64{accountKeys[0].IntID(), accountKeys[0].IntID()},
+		"Bad transaction",
 	)
 
 	NewTransaction(&requestParams{w: w, r: r, c: c, u: u})
 
 	expectCode(t, http.StatusBadRequest, w)
-	expectSplits(t, c, u, nil, nil)
+	expectSplits(t, c, u, nil, nil, "")
 }
 
 func TestTransactionOtherUserAccount(t *testing.T) {
@@ -158,10 +164,11 @@ func TestTransactionOtherUserAccount(t *testing.T) {
 	r.Body = buildTestTransactionRequest(t,
 		[]transaction.AmountType{-123, 123},
 		[]int64{accountKeys[0].IntID(), accountKeys[1].IntID()},
+		"Bad transaction",
 	)
 
 	NewTransaction(&requestParams{w: w, r: r, c: c, u: u})
 
 	expectCode(t, http.StatusBadRequest, w)
-	expectSplits(t, c, u, nil, nil)
+	expectSplits(t, c, u, nil, nil, "")
 }

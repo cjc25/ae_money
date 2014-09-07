@@ -14,6 +14,7 @@ type AmountType int64
 type Split struct {
 	Amount  AmountType `json:"amount"`
 	Account int64      `json:"account"`
+	Memo    string     `json:"memo"`
 }
 
 // A Transaction is a series of splits that conform to double-entry accounting
