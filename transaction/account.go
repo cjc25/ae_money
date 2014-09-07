@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"encoding/json"
 	"errors"
 	"strings"
 )
@@ -24,4 +25,13 @@ func (a *Account) Validate() error {
 		return errors.New("Empty account name.")
 	}
 	return nil
+}
+
+func (a *Account) MarshalJSON() ([]byte, error) {
+	representation := map[string]interface{}{
+		"name":  a.Name,
+		"total": a.total,
+	}
+
+	return json.Marshal(representation)
 }

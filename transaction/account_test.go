@@ -32,3 +32,19 @@ func TestValidate_InvalidNoName(t *testing.T) {
 		t.Errorf("Expected invalid, got valid.")
 	}
 }
+
+func TestMarshalJSON(t *testing.T) {
+	a := Account{Name: "myname", total: 12345}
+
+	json, err := a.MarshalJSON()
+	if err != nil {
+		t.Error(err)
+	}
+
+	expected := `{"name":"myname","total":12345}`
+	got := string(json)
+
+	if got != expected {
+		t.Errorf("Expected JSON string %v but got %v", expected, got)
+	}
+}
