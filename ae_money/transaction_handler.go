@@ -58,8 +58,8 @@ func NewTransaction(p *requestParams) {
 		if err := datastore.GetMulti(c, accountKeys, accounts); err != nil {
 			return err
 		}
-		for i, account := range accounts {
-			x.AddAccount(&account, accountKeys[i].IntID())
+		for i := range accounts {
+			x.AddAccount(&accounts[i], accountKeys[i].IntID())
 		}
 
 		if err := x.Commit(); err != nil {
