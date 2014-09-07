@@ -153,6 +153,8 @@ function addNewTransactionSplit() {
 
 function newTransactionToAccounts() {
   toPageFunction("accounts")();
+
+  $("#new_transaction_memo").val("");
   // Remove the split selectors, in case accounts change.
   $("#new_transaction_splits").children().remove();
 }
@@ -161,13 +163,14 @@ function submitNewTransaction() {
   submit_button = $(this);
   submit_button.prop("disabled", true);
 
-  request = {amounts: [], accounts: []}
+  request = {amounts: [], accounts: []};
   $("#new_transaction_splits .new_transaction_amount").each(function() {
     request.amounts.push(parseInt($(this).val(), 10));
   });
   $("#new_transaction_splits option:selected").each(function() {
     request.accounts.push($(this).data("key"));
   });
+  request.memo = $("#new_transaction_memo").val();
 
   $.ajax(apiUrl("/transactions/new"), {
     type: "POST",
