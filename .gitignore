@@ -1,5 +1,6 @@
 // Ignore vim swaps.
 *.swp
 
-// Ignore windows goapp test executables
+// Ignore goapp test executables
+*.test
 *.test.exe
