@@ -10,3 +10,32 @@
 .account_link:hover {
   cursor: pointer;
 }
+
+#account_detail_splits ul {
+  list-style-type: none;
+  width: 60%;
+}
+
+#account_detail_splits li div {
+  display: inline-block;
+}
+
+#account_detail_splits li.header {
+  font-weight: bold;
+}
+
+#account_detail_splits li.entry {
+  border-top: 1px solid;
+}
+
+#account_detail_splits li.entry:nth-child(odd) {
+  background-color: #deebf7;
+}
+
+#account_detail_splits .memo {
+  width: 80%;
+}
+
+#account_detail_splits .amount {
+  width: 20%;
+}

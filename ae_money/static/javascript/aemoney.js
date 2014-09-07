@@ -32,10 +32,23 @@ function toAccountPage(clickEvent) {
         list_div.text("No splits.");
       } else {
         list = $("<ul/>");
+        list.append(
+          $("<li/>").addClass("header")
+            .append($("<div/>").addClass("memo").text("Memo"))
+            .append($("<div/>").addClass("amount").text("Amount"))
+        );
+
         $.each(data.splits, function(i, v) {
-          list.append($("<li/>")
+          line = $("<li/>").addClass("entry");
+          line.append($("<div/>")
+            .addClass("memo")
+            .text(v.memo)
+          );
+          line.append($("<div/>")
+            .addClass("amount")
             .text(v.amount)
           );
+          list.append(line);
         });
 
         list_div.html(list);
@@ -176,9 +189,11 @@ function submitNewTransaction() {
     type: "POST",
     data: JSON.stringify(request),
     contentType: "application/json",
-    dataType: "json",
 
     success: newTransactionToAccounts,
+    error: function(jqXHR, textStatus) {
+      alert("Failed to commit transaction:\n" + jqXHR.responseText);
+    },
     complete: function() {
       submit_button.prop("disabled", false);
     },
