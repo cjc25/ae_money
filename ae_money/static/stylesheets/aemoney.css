@@ -20,11 +20,11 @@
   display: inline-block;
 }
 
-#account_detail_splits li.header {
+#account_detail_splits li.header, #account_detail_splits li.total {
   font-weight: bold;
 }
 
-#account_detail_splits li.entry {
+#account_detail_splits li.entry, #account_detail_splits li.total {
   border-top: 1px solid;
 }
 

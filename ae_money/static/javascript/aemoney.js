@@ -51,6 +51,12 @@ function toAccountPage(clickEvent) {
           list.append(line);
         });
 
+        list.append(
+          $("<li/>").addClass("total")
+            .append($("<div/>").addClass("memo").text("Total"))
+            .append($("<div/>").addClass("amount").text(data.account.total))
+        );
+
         list_div.html(list);
       }
     }
