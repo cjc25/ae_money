@@ -2,7 +2,11 @@ package ae_money
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
+	"time"
 
 	"code.google.com/p/go-uuid/uuid"
 
@@ -16,6 +20,32 @@ type TransactionRequest struct {
 	Amounts  []transaction.AmountType `json:"amounts"`
 	Accounts []int64                  `json:"accounts"`
 	Memo     string                   `json:"memo"`
+	Date     string                   `json:"date"`
+}
+
+func parseDate(s string) (time.Time, error) {
+	parseFailure := func(s string) (time.Time, error) {
+		return time.Time{}, fmt.Errorf("Could not parse %v as a date", s)
+	}
+
+	components := strings.Split(s, "-")
+
+	if len(components) != 3 {
+		return parseFailure(s)
+	}
+
+	dateparts := make([]int, 3)
+	for i := range components {
+		parsed, err := strconv.Atoi(components[i])
+		if err != nil {
+			return parseFailure(s)
+		}
+		dateparts[i] = parsed
+	}
+
+	date := time.Date(
+		dateparts[0], time.Month(dateparts[1]), dateparts[2], 0, 0, 0, 0, time.UTC)
+	return date, nil
 }
 
 func NewTransaction(p *requestParams) {
@@ -33,6 +63,12 @@ func NewTransaction(p *requestParams) {
 		return
 	}
 
+	date, err := parseDate(request.Date)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	userKey := userKey(c, u)
 	transactionId := uuid.NewRandom().String()
 	accountKeys := make([]*datastore.Key, len(request.Accounts))
@@ -42,7 +78,12 @@ func NewTransaction(p *requestParams) {
 	for i := range request.Accounts {
 		accountKeys[i] = datastore.NewKey(c, "Account", "", request.Accounts[i], userKey)
 		splitKeys[i] = datastore.NewKey(c, "Split", transactionId, 0, accountKeys[i])
-		splits[i] = &transaction.Split{request.Amounts[i], request.Accounts[i], request.Memo}
+		splits[i] = &transaction.Split{
+			Amount:  request.Amounts[i],
+			Account: request.Accounts[i],
+			Memo:    request.Memo,
+			Date:    date,
+		}
 	}
 
 	x := transaction.NewTransaction()
@@ -53,7 +94,7 @@ func NewTransaction(p *requestParams) {
 		return
 	}
 
-	err := datastore.RunInTransaction(c, func(c appengine.Context) error {
+	err = datastore.RunInTransaction(c, func(c appengine.Context) error {
 		accounts := make([]transaction.Account, len(accountKeys))
 		if err := datastore.GetMulti(c, accountKeys, accounts); err != nil {
 			return err

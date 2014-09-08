@@ -32,8 +32,12 @@
   background-color: #deebf7;
 }
 
+#account_detail_splits .date {
+  width: 20%;
+}
+
 #account_detail_splits .memo {
-  width: 80%;
+  width: 60%;
 }
 
 #account_detail_splits .amount {

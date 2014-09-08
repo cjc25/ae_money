@@ -4,6 +4,7 @@ package transaction
 import (
 	"errors"
 	"fmt"
+	"time"
 )
 
 // The type used for a Split's value.
@@ -15,6 +16,7 @@ type Split struct {
 	Amount  AmountType `json:"amount"`
 	Account int64      `json:"account"`
 	Memo    string     `json:"memo"`
+	Date    time.Time  `json:"date"`
 }
 
 // A Transaction is a series of splits that conform to double-entry accounting

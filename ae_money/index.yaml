@@ -14,3 +14,15 @@ indexes:
   ancestor: yes
   properties:
   - name: Name
+
+- kind: Split
+  ancestor: yes
+  properties:
+  - name: Date
+
+- kind: Split
+  ancestor: yes
+  properties:
+  - name: Date
+  - name: Amount
+    direction: desc

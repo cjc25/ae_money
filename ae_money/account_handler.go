@@ -68,7 +68,7 @@ func ShowAccount(p *requestParams) {
 		return
 	}
 
-	q := datastore.NewQuery("Split").Ancestor(accountKey)
+	q := datastore.NewQuery("Split").Ancestor(accountKey).Order("Date").Order("-Amount")
 	// We make an empty slice so we can return [] if there are no splits.
 	splits := make([]transaction.Split, 0)
 	_, err = q.GetAll(c, &splits)

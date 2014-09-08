@@ -15,8 +15,8 @@ import (
 	"appengine/user"
 )
 
-func buildTestTransactionRequest(t *testing.T, amounts []transaction.AmountType, accounts []int64, memo string) io.ReadCloser {
-	request := &TransactionRequest{Amounts: amounts, Accounts: accounts, Memo: memo}
+func buildTestTransactionRequest(t *testing.T, amounts []transaction.AmountType, accounts []int64, memo, date string) io.ReadCloser {
+	request := &TransactionRequest{Amounts: amounts, Accounts: accounts, Memo: memo, Date: date}
 	b := bytes.Buffer{}
 	e := json.NewEncoder(&b)
 	if err := e.Encode(request); err != nil {
@@ -74,6 +74,7 @@ func TestTransactionSuccess(t *testing.T) {
 		[]transaction.AmountType{-123, 123},
 		[]int64{accountKeys[0].IntID(), accountKeys[1].IntID()},
 		"Test transaction",
+		"2014-11-01",
 	)
 
 	NewTransaction(&requestParams{w: w, r: r, c: c, u: u})
@@ -81,6 +82,46 @@ func TestTransactionSuccess(t *testing.T) {
 	expectCode(t, http.StatusOK, w)
 	expectBody(t, "", w)
 	expectSplits(t, c, u, accountKeys, []transaction.AmountType{-123, 123}, "Test transaction")
+}
+
+func TestTransactionNoDate(t *testing.T) {
+	u := &user.User{Email: "test@example.com"}
+	w, r, c := initTestRequestParams(t, u)
+	defer c.Close()
+
+	accountKeys := insertAccountsOrDie(t, c,
+		[]transaction.Account{{Name: "a1"}, {Name: "a2"}}, u)
+	r.Body = buildTestTransactionRequest(t,
+		[]transaction.AmountType{-123, 123},
+		[]int64{accountKeys[0].IntID(), accountKeys[1].IntID()},
+		"Test transaction",
+		"",
+	)
+
+	NewTransaction(&requestParams{w: w, r: r, c: c, u: u})
+
+	expectCode(t, http.StatusBadRequest, w)
+	expectSplits(t, c, u, nil, nil, "")
+}
+
+func TestTransactionBadDate(t *testing.T) {
+	u := &user.User{Email: "test@example.com"}
+	w, r, c := initTestRequestParams(t, u)
+	defer c.Close()
+
+	accountKeys := insertAccountsOrDie(t, c,
+		[]transaction.Account{{Name: "a1"}, {Name: "a2"}}, u)
+	r.Body = buildTestTransactionRequest(t,
+		[]transaction.AmountType{-123, 123},
+		[]int64{accountKeys[0].IntID(), accountKeys[1].IntID()},
+		"Test transaction",
+		"Not a real date",
+	)
+
+	NewTransaction(&requestParams{w: w, r: r, c: c, u: u})
+
+	expectCode(t, http.StatusBadRequest, w)
+	expectSplits(t, c, u, nil, nil, "")
 }
 
 func TestTransactionDifferentLengths(t *testing.T) {
@@ -94,6 +135,7 @@ func TestTransactionDifferentLengths(t *testing.T) {
 		[]transaction.AmountType{123, -100, -23},
 		[]int64{accountKeys[0].IntID(), accountKeys[1].IntID()},
 		"Bad transaction",
+		"2014-11-01",
 	)
 
 	NewTransaction(&requestParams{w: w, r: r, c: c, u: u})
@@ -126,6 +168,7 @@ func TestTransactionNonZero(t *testing.T) {
 		[]transaction.AmountType{123, 456},
 		[]int64{accountKeys[0].IntID(), accountKeys[1].IntID()},
 		"Bad transaction",
+		"2014-11-01",
 	)
 
 	NewTransaction(&requestParams{w: w, r: r, c: c, u: u})
@@ -145,6 +188,7 @@ func TestTransactionDuplicateAccount(t *testing.T) {
 		[]transaction.AmountType{-123, 123},
 		[]int64{accountKeys[0].IntID(), accountKeys[0].IntID()},
 		"Bad transaction",
+		"2014-11-01",
 	)
 
 	NewTransaction(&requestParams{w: w, r: r, c: c, u: u})
@@ -165,6 +209,7 @@ func TestTransactionOtherUserAccount(t *testing.T) {
 		[]transaction.AmountType{-123, 123},
 		[]int64{accountKeys[0].IntID(), accountKeys[1].IntID()},
 		"Bad transaction",
+		"2014-11-01",
 	)
 
 	NewTransaction(&requestParams{w: w, r: r, c: c, u: u})

@@ -34,12 +34,17 @@ function toAccountPage(clickEvent) {
         list = $("<ul/>");
         list.append(
           $("<li/>").addClass("header")
+            .append($("<div/>").addClass("date").text("Date"))
             .append($("<div/>").addClass("memo").text("Memo"))
             .append($("<div/>").addClass("amount").text("Amount"))
         );
 
         $.each(data.splits, function(i, v) {
           line = $("<li/>").addClass("entry");
+          line.append($("<div/>")
+            .addClass("date")
+            .text(v.date.split("T")[0])  // Take the date portion of the time.
+          );
           line.append($("<div/>")
             .addClass("memo")
             .text(v.memo)
@@ -53,7 +58,8 @@ function toAccountPage(clickEvent) {
 
         list.append(
           $("<li/>").addClass("total")
-            .append($("<div/>").addClass("memo").text("Total"))
+            .append($("<div/>").addClass("date").text("Total"))
+            .append($("<div/>").addClass("memo"))
             .append($("<div/>").addClass("amount").text(data.account.total))
         );
 
@@ -190,6 +196,7 @@ function submitNewTransaction() {
     request.accounts.push($(this).data("key"));
   });
   request.memo = $("#new_transaction_memo").val();
+  request.date = $("#new_transaction_date").val();
 
   $.ajax(apiUrl("/transactions/new"), {
     type: "POST",
