@@ -43,3 +43,11 @@
 #account_detail_splits .amount {
   width: 20%;
 }
+
+/* width and height based on '+'
+ * TODO(cjc25): Force the font to make this always fit?
+ */
+#new_transaction_add_split, .new_transaction_remove_split {
+  width: 24px;
+  height: 21px;
+}
