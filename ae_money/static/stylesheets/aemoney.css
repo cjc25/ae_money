@@ -2,13 +2,28 @@
   display: none;
 }
 
-.account_link {
-  text-decoration: underline;
-  color: blue;
+#accounts_list ul {
+  list-style-type: none;
+  width: 60%;
 }
 
-.account_link:hover {
+#accounts_list li div {
+  display: inline-block;
+}
+
+#accounts_list .account_link {
+  text-decoration: underline;
+  color: blue;
+  width: 60%;
+}
+
+#accounts_list .account_link:hover {
   cursor: pointer;
+}
+
+#accounts_list .total {
+  width: 40%;
+  text-align: right;
 }
 
 #account_detail_splits ul {

@@ -88,10 +88,16 @@ function updateAccountsList(sync) {
         list = $("<ul/>");
         $.each(data, function(i, v) {
           list.append($("<li/>")
-            .addClass("account_link")
-            .text(v.account.name)
-            .data("key", v.key)
-            .click(toAccountPage)
+            .append($("<div/>")
+              .addClass("account_link")
+              .text(v.account.name)
+              .data("key", v.key)
+              .click(toAccountPage)
+            )
+            .append($("<div/>")
+              .addClass("total")
+              .text(v.account.total)
+            )
           );
         });
 
@@ -147,7 +153,7 @@ function setupAccountDetailLinks() {
 
 function buildAccountSelector() {
   selector = $("<select/>");
-  $("#accounts_list li").each(function() {
+  $("#accounts_list .account_link").each(function() {
     selector.append($("<option/>")
       .text($(this).text())
       .data("key", $(this).data("key"))
@@ -177,6 +183,7 @@ function addNewTransactionSplit() {
 }
 
 function newTransactionToAccounts() {
+  updateAccountsList();
   toPageFunction("accounts")();
 
   $("#new_transaction_memo").val("");
