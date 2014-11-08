@@ -60,6 +60,7 @@ func ShowAccount(p *requestParams) {
 	// We get the account, then query splits separately: Accounts can't be
 	// updated yet, but even if they could they're just names. Consistency is
 	// unimportant.
+	// TODO(cjc25): Is the above still true when Accounts include totals?
 	accountKey := datastore.NewKey(c, "Account", "", accountIntID, userKey(c, u))
 	var a transaction.Account
 	err = datastore.Get(c, accountKey, &a)
