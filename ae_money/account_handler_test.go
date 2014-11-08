@@ -237,3 +237,77 @@ func TestNewAccount_FailureNoAccountName(t *testing.T) {
 
 	expectBadNewAccountResponse(t, c, u, w)
 }
+
+func expectNumAccounts(t *testing.T, c appengine.Context, u *user.User, expected_count int) {
+	q := datastore.NewQuery("Account").Ancestor(userKey(c, u))
+	actual_count, err := q.Count(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if actual_count != expected_count {
+		t.Errorf("Expected %v account(s), got %v", expected_count, actual_count)
+	}
+}
+
+// The only failure that expects a bad request response, since it's perfectly
+// fine to delete an account that doesn't exist: nothing happens.
+func TestDeleteAccount_FailureSplitsInAccount(t *testing.T) {
+	u := &user.User{Email: "test@example.com"}
+	w, _, c := initTestRequestParams(t, u)
+	defer c.Close()
+
+	a := []transaction.Account{{Name: "a1"}}
+	k := insertAccountsOrDie(t, c, a, u)[0]
+	insertSplitsOrDie(t, c, []*transaction.Split{&transaction.Split{Amount: 123}}, k)
+
+	v := map[string]string{"key": fmt.Sprint(k.IntID())}
+
+	DeleteAccount(&requestParams{w: w, c: c, u: u, v: v})
+	expectCode(t, http.StatusBadRequest, w)
+	expectNumAccounts(t, c, u, 1)
+}
+
+func TestDeleteAccount_FailureNoSuchAccount(t *testing.T) {
+	u := &user.User{Email: "test@example.com"}
+	w, _, c := initTestRequestParams(t, u)
+	defer c.Close()
+
+	a := []transaction.Account{{Name: "a1"}}
+	k := insertAccountsOrDie(t, c, a, u)[0]
+
+	v := map[string]string{"key": fmt.Sprint(k.IntID() + 1)}
+
+	DeleteAccount(&requestParams{w: w, c: c, u: u, v: v})
+	expectCode(t, http.StatusOK, w)
+	expectNumAccounts(t, c, u, 1)
+}
+
+func TestDeleteAccount_FailureOtherUser(t *testing.T) {
+	u := &user.User{Email: "test@example.com"}
+	w, _, c := initTestRequestParams(t, u)
+	defer c.Close()
+
+	a := []transaction.Account{{Name: "a1"}}
+	k := insertAccountsOrDie(t, c, a, &user.User{Email: "other@example.com"})[0]
+
+	v := map[string]string{"key": fmt.Sprint(k.IntID())}
+
+	DeleteAccount(&requestParams{w: w, c: c, u: u, v: v})
+	expectCode(t, http.StatusOK, w)
+	expectNumAccounts(t, c, u, 0)
+}
+
+func TestDeleteAccount_Success(t *testing.T) {
+	u := &user.User{Email: "test@example.com"}
+	w, _, c := initTestRequestParams(t, u)
+	defer c.Close()
+
+	a := []transaction.Account{{Name: "a1"}}
+	k := insertAccountsOrDie(t, c, a, u)[0]
+
+	v := map[string]string{"key": fmt.Sprint(k.IntID())}
+
+	DeleteAccount(&requestParams{w: w, c: c, u: u, v: v})
+	expectCode(t, http.StatusOK, w)
+	expectNumAccounts(t, c, u, 0)
+}

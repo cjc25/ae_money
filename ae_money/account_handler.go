@@ -7,6 +7,7 @@ import (
 
 	"github.com/cjc25/ae_money/transaction"
 
+	"appengine"
 	"appengine/datastore"
 )
 
@@ -116,6 +117,38 @@ func NewAccount(p *requestParams) {
 	e := json.NewEncoder(w)
 	if err = e.Encode(&persisted); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func DeleteAccount(p *requestParams) {
+	w, c, u, v := p.w, p.c, p.u, p.v
+
+	var accountIntID int64
+	_, err := fmt.Sscan(v["key"], &accountIntID)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	accountKey := datastore.NewKey(c, "Account", "", accountIntID, userKey(c, u))
+	splitsQuery := datastore.NewQuery("Split").Ancestor(accountKey)
+
+	err = datastore.RunInTransaction(c, func(c appengine.Context) error {
+		count, err := splitsQuery.Count(c)
+		if err != nil {
+			return err
+		}
+		if count != 0 {
+			return fmt.Errorf("Can't delete an account which still has %v splits", count)
+		}
+
+		return datastore.Delete(c, accountKey)
+	}, nil)
+	if err != nil {
+		// TODO(cjc25): This might not be a 400: if e.g. datastore failed it should
+		// be a 500. Interpret err and return the right thing.
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 }
