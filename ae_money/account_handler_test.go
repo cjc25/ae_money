@@ -86,7 +86,7 @@ func TestListAccounts_MultipleUsers(t *testing.T) {
 
 	a := []transaction.Account{{Name: "a1"}}
 	k := insertAccountsOrDie(t, c, a, u)
-	insertAccountsOrDie(t, c, []transaction.Account{{Name: "a1"}}, &user.User{Email: "other@example.com"})
+	insertAccountsOrDie(t, c, []transaction.Account{{Name: "a2"}}, &user.User{Email: "other@example.com"})
 
 	ListAccounts(&requestParams{w: w, r: r, c: c, u: u})
 
