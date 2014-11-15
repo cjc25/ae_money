@@ -22,6 +22,46 @@ function toPageFunction(newPage) {
   }
 }
 
+function updateAccountsList(sync) {
+  list_div = $("#accounts_list");
+
+  // Get the accounts list.
+  $.ajax(apiUrl("accounts"), {
+    async: !sync,
+    type: "GET",
+    dataType: "json",
+
+    success: function(data) {
+      if (data.length == 0) {
+        list_div.text("No accounts.");
+      } else {
+        list = $("<ul/>");
+        $.each(data, function(i, v) {
+          list.append($("<li/>")
+            .append($("<div/>")
+              .addClass("account_link")
+              .text(v.account.name)
+              .data("key", v.key)
+              .click(toAccountPage)
+            )
+            .append($("<div/>")
+              .addClass("total")
+              .text(v.account.total)
+            )
+          );
+        });
+
+        list_div.html(list);
+      }
+    },
+  });
+}
+
+function toAccountListPage(clickEvent) {
+  updateAccountsList();
+  toPageFunction("accounts")();
+}
+
 function toAccountPage(clickEvent) {
   // Migrate the account-specific info we might need.
   $("#account_detail_name").text($(this).text());
@@ -79,40 +119,6 @@ function toAccountPage(clickEvent) {
   toPageFunction("account_detail")();
 }
 
-function updateAccountsList(sync) {
-  list_div = $("#accounts_list");
-
-  // Get the accounts list.
-  $.ajax(apiUrl("accounts"), {
-    async: !sync,
-    type: "GET",
-    dataType: "json",
-
-    success: function(data) {
-      if (data.length == 0) {
-        list_div.text("No accounts.");
-      } else {
-        list = $("<ul/>");
-        $.each(data, function(i, v) {
-          list.append($("<li/>")
-            .append($("<div/>")
-              .addClass("account_link")
-              .text(v.account.name)
-              .data("key", v.key)
-              .click(toAccountPage)
-            )
-            .append($("<div/>")
-              .addClass("total")
-              .text(v.account.total)
-            )
-          );
-        });
-
-        list_div.html(list);
-      }
-    },
-  });
-}
 
 function setupRootLinks() {
   $("#root_to_accounts").click(toPageFunction("accounts"));
@@ -190,8 +196,7 @@ function addNewTransactionSplit() {
 }
 
 function newTransactionToAccounts() {
-  updateAccountsList();
-  toPageFunction("accounts")();
+  toAccountListPage();
 
   $("#new_transaction_memo").val("");
   // Remove the split selectors, in case accounts change.
