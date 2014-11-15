@@ -76,7 +76,18 @@ function toAccountPage(clickEvent) {
 
     success: function(data) {
       if (data.splits.length == 0) {
-        list_div.text("No splits.");
+        list_div.empty()
+          .append($("<div/>").text("No splits."))
+          .append($("<div/>")
+            .append($("<input/>").prop({
+              type: "submit",
+              id: "account_detail_delete_account",
+              value: "Delete account",
+            }).data({
+              name: $("#account_detail_name").text(),
+              key: $("#account_detail_name").data("key"),
+            }).click(deleteAccount))
+          );
       } else {
         list = $("<ul/>");
         list.append(
@@ -119,6 +130,20 @@ function toAccountPage(clickEvent) {
   toPageFunction("account_detail")();
 }
 
+function deleteAccount(clickEvent) {
+  name = $(this).data("name")
+  key = $(this).data("key")
+  if (confirm("Are you sure you want to delete " + name + "?")) {
+    $.ajax(apiUrl("accounts", key), {
+      type: "DELETE",
+      cache: false,
+
+      complete: function() {
+        toAccountListPage();
+      }
+    });
+  }
+}
 
 function setupRootLinks() {
   $("#root_to_accounts").click(toPageFunction("accounts"));
