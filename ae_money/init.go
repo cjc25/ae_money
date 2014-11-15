@@ -47,8 +47,7 @@ func init() {
 
 	api.HandleFunc("/accounts/new", baseWrapper(loginWrapper(NewAccount))).
 		Methods("POST")
-	api.HandleFunc("/accounts", baseWrapper(loginWrapper(ShowAccount))).
-		Queries("key", "{key:[0-9]+}").
+	api.HandleFunc("/accounts/{key:[0-9]+}", baseWrapper(loginWrapper(ShowAccount))).
 		Methods("GET")
 	api.HandleFunc("/accounts", baseWrapper(loginWrapper(ListAccounts))).
 		Methods("GET")

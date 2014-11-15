@@ -1,5 +1,13 @@
-function apiUrl(endpoint) {
-  return "/api/v0" + endpoint;
+function apiUrl(/* any number of arguments, encoded and separated by "/" */) {
+  result = "/api/v0";
+  for (i = 0; i < arguments.length; i++) {
+    if (arguments[i]) {
+      result += "/" + encodeURIComponent(arguments[i]);
+    } else {
+      break;
+    }
+  }
+  return result;
 }
 
 function toPageFunction(newPage) {
@@ -21,10 +29,9 @@ function toAccountPage(clickEvent) {
   list_div = $("#account_detail_splits");
 
   // Kick off a request for the splits.
-  $.ajax(apiUrl("/accounts"), {
+  $.ajax(apiUrl("accounts", $(this).data("key")), {
     type: "GET",
     cache: false,
-    data: {key: $(this).data("key")},
     dataType: "json",
 
     success: function(data) {
@@ -76,7 +83,7 @@ function updateAccountsList(sync) {
   list_div = $("#accounts_list");
 
   // Get the accounts list.
-  $.ajax(apiUrl("/accounts"), {
+  $.ajax(apiUrl("accounts"), {
     async: !sync,
     type: "GET",
     dataType: "json",
@@ -126,7 +133,7 @@ function setupAccountsLinks() {
     // Only one creation at a time please.
     submit_button.prop("disabled", true)
 
-    $.ajax(apiUrl("/accounts/new"), {
+    $.ajax(apiUrl("accounts", "new"), {
       type: "POST",
       data: JSON.stringify({
         name: $("#account_creation #new_account_name").val()
@@ -205,7 +212,7 @@ function submitNewTransaction() {
   request.memo = $("#new_transaction_memo").val();
   request.date = $("#new_transaction_date").val();
 
-  $.ajax(apiUrl("/transactions/new"), {
+  $.ajax(apiUrl("transactions", "new"), {
     type: "POST",
     data: JSON.stringify(request),
     contentType: "application/json",
