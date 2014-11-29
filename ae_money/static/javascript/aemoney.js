@@ -67,6 +67,7 @@ function toAccountPage(clickEvent) {
   $("#account_detail_name").text($(this).text());
   $("#account_detail_name").data("key", $(this).data("key"));
   list_div = $("#account_detail_splits");
+  list_div.empty().text("Loading...");
 
   // Kick off a request for the splits.
   $.ajax(apiUrl("accounts", $(this).data("key")), {
