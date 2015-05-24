@@ -1,4 +1,6 @@
-function apiUrl(/* any number of arguments, encoded and separated by "/" */) {
+// This function takes any number of arguments, which will be URIEncoded and
+// separated by "/".
+function apiUrl() {
   result = "/api/v0";
   for (i = 0; i < arguments.length; i++) {
     if (arguments[i]) {
