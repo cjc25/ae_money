@@ -51,9 +51,12 @@ func (x *Transaction) AddAccount(a *Account, id int64) int64 {
 	if id == 0 {
 		// If we didn't provide an id, set a brand new one.
 		for {
+			// Check if nextId was already added to this Transaction, and if not,
+			// assign it to a.
 			_, ok := x.accountMap[x.nextId]
 			if !ok {
 				id = x.nextId
+				x.nextId++
 				break
 			}
 			x.nextId++
