@@ -11,16 +11,21 @@ import (
 	"appengine/datastore"
 )
 
+// DatastoreAccount wraps transaction.Account for JSON responses that include a
+// datastore key.
 type DatastoreAccount struct {
 	Account *transaction.Account `json:"account"`
 	IntID   int64                `json:"key"`
 }
 
+// DatastoreAccountAndSplits wraps a DatastoreAccount and a slice of
+// transaction.Split for JSON responses.
 type DatastoreAccountAndSplits struct {
 	DatastoreAccount
 	Splits []transaction.Split `json:"splits"`
 }
 
+// ListAccounts gets the logged in user's accounts from datastore.
 func ListAccounts(p *requestParams) {
 	// Unwrap requestParams for easy access.
 	w, c, u := p.w, p.c, p.u
@@ -48,6 +53,8 @@ func ListAccounts(p *requestParams) {
 	}
 }
 
+// ShowAccount prints a specific Account's details, including Splits. The
+// Account to print is extracted from the gorilla/mux vars.
 func ShowAccount(p *requestParams) {
 	w, c, u, v := p.w, p.c, p.u, p.v
 
@@ -88,6 +95,8 @@ func ShowAccount(p *requestParams) {
 	}
 }
 
+// NewAccount creates a new Account. The Account is read as JSON from the
+// request body.
 func NewAccount(p *requestParams) {
 	// Unwrap requestParams for easy access.
 	w, r, c, u := p.w, p.r, p.c, p.u
@@ -121,6 +130,8 @@ func NewAccount(p *requestParams) {
 	}
 }
 
+// DeleteAccount deletes an Account owned by the logged in user. The Account to
+// delete is extracted from the gorilla/mux vars.
 func DeleteAccount(p *requestParams) {
 	w, c, u, v := p.w, p.c, p.u, p.v
 

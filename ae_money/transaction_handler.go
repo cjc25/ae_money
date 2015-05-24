@@ -2,10 +2,7 @@ package ae_money
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
 
 	"code.google.com/p/go-uuid/uuid"
@@ -16,6 +13,10 @@ import (
 	"appengine/datastore"
 )
 
+const dateStringFormat = "2006-01-02"
+
+// TransactionRequest is for JSON marshalling and unmarshalling of
+// NewTransaction request bodies.
 type TransactionRequest struct {
 	Amounts  []transaction.AmountType `json:"amounts"`
 	Accounts []int64                  `json:"accounts"`
@@ -23,31 +24,8 @@ type TransactionRequest struct {
 	Date     string                   `json:"date"`
 }
 
-func parseDate(s string) (time.Time, error) {
-	parseFailure := func(s string) (time.Time, error) {
-		return time.Time{}, fmt.Errorf("Could not parse %v as a date", s)
-	}
-
-	components := strings.Split(s, "-")
-
-	if len(components) != 3 {
-		return parseFailure(s)
-	}
-
-	dateparts := make([]int, 3)
-	for i := range components {
-		parsed, err := strconv.Atoi(components[i])
-		if err != nil {
-			return parseFailure(s)
-		}
-		dateparts[i] = parsed
-	}
-
-	date := time.Date(
-		dateparts[0], time.Month(dateparts[1]), dateparts[2], 0, 0, 0, 0, time.UTC)
-	return date, nil
-}
-
+// NewTransaction verifies that a transaction is valid, and if so commits all
+// or none of the Splits to the relevant Accounts.
 func NewTransaction(p *requestParams) {
 	w, r, c, u := p.w, p.r, p.c, p.u
 
@@ -63,7 +41,7 @@ func NewTransaction(p *requestParams) {
 		return
 	}
 
-	date, err := parseDate(request.Date)
+	date, err := time.Parse(dateStringFormat, request.Date)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

@@ -15,6 +15,8 @@ import (
 	"appengine/user"
 )
 
+// Convenience function to wrap the TransactionRequest in a format that an HTTP
+// Handler expects.
 func buildTestTransactionRequest(t *testing.T, amounts []transaction.AmountType, accounts []int64, memo, date string) io.ReadCloser {
 	request := &TransactionRequest{Amounts: amounts, Accounts: accounts, Memo: memo, Date: date}
 	b := bytes.Buffer{}

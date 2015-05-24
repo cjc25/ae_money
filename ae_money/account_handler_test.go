@@ -18,6 +18,8 @@ import (
 	"appengine/user"
 )
 
+// Setup method which adds required Accounts owned by User u to the test
+// datastore.
 func insertAccountsOrDie(t *testing.T, c appengine.Context, a []transaction.Account, u *user.User) []*datastore.Key {
 	accountKeys := make([]*datastore.Key, len(a))
 	for i := range a {
@@ -32,6 +34,7 @@ func insertAccountsOrDie(t *testing.T, c appengine.Context, a []transaction.Acco
 	return k
 }
 
+// Expectation function for a list of Accounts and the expected Keys.
 func expectListAccountsResponse(t *testing.T, w *httptest.ResponseRecorder, k []*datastore.Key, a []transaction.Account) {
 	if len(a) != len(k) {
 		t.Fatalf("BAD TEST: Expected keys %v and accounts %v not same length", k, a)
@@ -93,6 +96,7 @@ func TestListAccounts_MultipleUsers(t *testing.T) {
 	expectListAccountsResponse(t, w, k, a)
 }
 
+// Convenience function to add expected Splits to a specific Account.
 func insertSplitsOrDie(t *testing.T, c appengine.Context, s []*transaction.Split, accountKey *datastore.Key) {
 	splitKeys := make([]*datastore.Key, len(s))
 	for i := range s {
@@ -202,6 +206,7 @@ func TestNewAccount_Success(t *testing.T) {
 	}
 }
 
+// Expectation function for responses to failed NewAccount requests.
 func expectBadNewAccountResponse(t *testing.T, c appengine.Context, u *user.User, w *httptest.ResponseRecorder) {
 	q := datastore.NewQuery("Account").Ancestor(userKey(c, u)).KeysOnly()
 	keys, err := q.GetAll(c, make([]transaction.Account, 0))
@@ -238,6 +243,7 @@ func TestNewAccount_FailureNoAccountName(t *testing.T) {
 	expectBadNewAccountResponse(t, c, u, w)
 }
 
+// Expectation function for the number of Accounts a User has.
 func expectNumAccounts(t *testing.T, c appengine.Context, u *user.User, expected_count int) {
 	q := datastore.NewQuery("Account").Ancestor(userKey(c, u))
 	actual_count, err := q.Count(c)
@@ -282,6 +288,8 @@ func TestDeleteAccount_FailureNoSuchAccount(t *testing.T) {
 	expectNumAccounts(t, c, u, 1)
 }
 
+// When deleting another User's account, report StatusOK as the "error code" to
+// avoid exposing info.
 func TestDeleteAccount_FailureOtherUser(t *testing.T) {
 	u := &user.User{Email: "test@example.com"}
 	w, _, c := initTestRequestParams(t, u)
